@@ -349,6 +349,9 @@ func UpdateUserOp(userOp *model.UserOperation, nonce *big.Int) *model.UserOperat
 	return userOp
 }
 
+// PrintSignedOpJSON marshals a UserOperation to JSON and prints it.
+// If the UserOperation is a cross-chain operation and the signature contains
+// cross-chain or aggregate metadata.
 func PrintSignedOpJSON(userOp *model.UserOperation) error {
 	jsonBytes, err := json.Marshal(userOp)
 	if err != nil {
