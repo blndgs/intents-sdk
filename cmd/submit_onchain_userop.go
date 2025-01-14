@@ -91,8 +91,7 @@ func createTransactionOpts(rpcClient *geth.Client, chainID *big.Int, entrypointA
 	stackupUserOp := stackup_userop.UserOperation(*signedUserOp)
 
 	// Calculate gas limit with buffer for Squid operations
-	estimatedGasLimit := uint64(1000000) // From Squid response
-	gasLimitBuffer := uint64(200000)     // Additional buffer
+	gasLimit := new(big.Int).Add(new(big.Int).Add(signedUserOp.PreVerificationGas, signedUserOp.VerificationGasLimit), signedUserOp.CallGasLimit).Uint64() + 100_000
 
 	return transaction.Opts{
 		Eth:         rpcClient,
@@ -104,7 +103,7 @@ func createTransactionOpts(rpcClient *geth.Client, chainID *big.Int, entrypointA
 		BaseFee:     gasParams.BaseFee,
 		Tip:         gasParams.Tip,
 		GasPrice:    gasParams.GasPrice,
-		GasLimit:    estimatedGasLimit + gasLimitBuffer,
+		GasLimit:    gasLimit,
 		NoSend:      false,
 		WaitTimeout: 4 * time.Minute, // Increased timeout for cross-chain
 	}
