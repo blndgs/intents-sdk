@@ -26,6 +26,8 @@ func AddCommonFlags(cmd *cobra.Command) error {
 	cmd.Flags().String("u", "", "User operation JSON")
 	cmd.Flags().String("h", "", "List of other cross-chain user operations hashes")
 	cmd.Flags().String("c", "", "List of other user operations' Chains")
+	cmd.Flags().String("k", "", "Sign for the Kernel wallet")
+	cmd.Flags().String("e", "", "Generate an enable signature for the Kernel wallet")
 
 	// Override the default error handling
 	cmd.SilenceErrors = true
@@ -280,6 +282,20 @@ func GetHashes(cmd *cobra.Command) ([]common.Hash, error) {
 	}
 
 	return parsedHashes, nil
+}
+
+// GetKernelOptions parses the command line flag 'k' or command line flag 'e'
+// `k`: generate kernel signature
+// `e`: generate a kernel enable signature
+func GetKernelOptions(cmd *cobra.Command) (kernelSig, enableSig bool, err error) {
+	kernelSig = cmd.Flags().Changed("k")
+	enableSig = cmd.Flags().Changed("e")
+
+	if kernelSig && enableSig {
+		return false, false, config.NewError("both 'k' and 'e' flags cannot be set simultaneously", nil)
+	}
+
+	return kernelSig, enableSig, nil
 }
 
 // GetChainMonikers parses the network moniker or numeric chain-id value from the command line
