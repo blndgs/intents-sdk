@@ -28,6 +28,16 @@ type ChainNode struct {
 	URLStr    string
 }
 
+type Config struct {
+	NodesMap            NodesMap
+	BundlerURL          string
+	EntryPointAddr      common.Address
+	KernelFactoryAddr   common.Address
+	KernelValidatorAddr common.Address
+	KernelExecutorAddr  common.Address
+	Signer              *signer.EOA
+}
+
 type NodesMap map[string]ChainNode // moniker -> chainID -> node
 
 const ethNodeUrlPrefix = "eth_node_url_"
@@ -39,7 +49,7 @@ const DefaultRPCURLKey = "default"
 // ReadConf reads configuration from a .env file and initializes
 // necessary variables like node URLs, signer, bundler URL, and entry point address.
 // It returns these values and logs configuration details.
-func ReadConf(quiet bool) (NodesMap, string, common.Address, *signer.EOA, error) {
+func ReadConf(quiet bool) (*Config, error) {
 	const signerPrvKey = "SIGNER_PRIVATE_KEY"
 	const bundlerUrl = "BUNDLER_URL"
 	const epAddr = "ENTRYPOINT_ADDR"
@@ -48,7 +58,7 @@ func ReadConf(quiet bool) (NodesMap, string, common.Address, *signer.EOA, error)
 	viper.SetConfigType("env")
 	viper.AddConfigPath(".")
 	if err := viper.ReadInConfig(); err != nil {
-		return nil, "", common.Address{}, nil, NewError("fatal error config file", err)
+		return nil, NewError("fatal error config file", err)
 	}
 
 	foundDefaultRPCURL := false
@@ -58,7 +68,6 @@ func ReadConf(quiet bool) (NodesMap, string, common.Address, *signer.EOA, error)
 		if strings.HasPrefix(key, ethNodeUrlPrefix) {
 			if strings.Contains(key, DefaultRPCURLKey) {
 				if foundDefaultRPCURL {
-					return nil, "", common.Address{}, nil,
 					return nil, NewError("multiple default RPC URLs found: Add only one environment variable with 'default' in the key, e.g. ETH_NODE_URL_DEFAULT", nil)
 				}
 				foundDefaultRPCURL = true
@@ -66,7 +75,7 @@ func ReadConf(quiet bool) (NodesMap, string, common.Address, *signer.EOA, error)
 				var err error
 				nodeURLs[DefaultRPCURLKey], err = initNode(key)
 				if err != nil {
-					return nil, "", common.Address{}, nil, NewError("failed to initialize default node", err)
+					return nil, NewError("failed to initialize default node", err)
 				}
 				continue
 			}
@@ -74,7 +83,7 @@ func ReadConf(quiet bool) (NodesMap, string, common.Address, *signer.EOA, error)
 			var err error
 			nodeURLs[moniker], err = initNode(key)
 			if err != nil {
-				return nil, "", common.Address{}, nil, NewError("failed to initialize node", err)
+				return nil, NewError("failed to initialize node", err)
 			}
 		}
 	}
@@ -86,7 +95,7 @@ func ReadConf(quiet bool) (NodesMap, string, common.Address, *signer.EOA, error)
 	prvKeyHex := viper.GetString(signerPrvKey)
 	s, err := signer.New(prvKeyHex)
 	if err != nil {
-		return nil, "", common.Address{}, nil, NewError("fatal signer error", err)
+		return nil, NewError("fatal signer error", err)
 	}
 	bundlerURL := viper.GetString(bundlerUrl)
 	entryPointAddr := common.HexToAddress(viper.GetString(epAddr))
@@ -101,7 +110,15 @@ func ReadConf(quiet bool) (NodesMap, string, common.Address, *signer.EOA, error)
 		}
 	}
 
-	return nodeURLs, bundlerURL, entryPointAddr, s, nil
+	return &Config{
+		NodesMap:            nodeURLs,
+		BundlerURL:          bundlerURL,
+		EntryPointAddr:      entryPointAddr,
+		KernelFactoryAddr:   kernelFactoryAddr,
+		KernelValidatorAddr: kernelValidatorAddr,
+		KernelExecutorAddr:  kernelExecutorAddr,
+		Signer:              s,
+	}, nil
 }
 
 func initNode(key string) (ChainNode, error) {
