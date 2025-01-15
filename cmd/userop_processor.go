@@ -41,12 +41,17 @@ type UserOpProcessor struct {
 	ChainIDs       []*big.Int
 }
 
-func NewUserOpProcessor(userOps []*model.UserOperation, nodes config.NodesMap, bundlerURL string, entrypointAddr common.Address, signer *signer.EOA, hashes []common.Hash, chainMonikers []string) (*UserOpProcessor, error) {
+func NewUserOpProcessor(
+	userOps []*model.UserOperation, nodes config.NodesMap, bundlerURL string, entrypointAddr common.Address,
+	signer *signer.EOA, hashes []common.Hash, chainMonikers []string, kernelSig, enableSig bool,
+) (*UserOpProcessor, error) {
 	if len(userOps) == 0 {
 		return nil, config.NewError("userOps is empty", nil)
 	}
 	if len(userOps) > 1 && len(hashes) > 0 {
-		return nil, config.NewError("hashes must be empty for multiple UserOperations as they are computed by the userOps", nil)
+		return nil, config.NewError(
+			"hashes must be empty for multiple UserOperations as they are computed by the userOps", nil,
+		)
 	}
 
 	chainIDs := make([]*big.Int, len(userOps))
@@ -60,14 +65,16 @@ func NewUserOpProcessor(userOps []*model.UserOperation, nodes config.NodesMap, b
 	}
 
 	return &UserOpProcessor{
-		Nodes:          nodes,
-		BundlerURL:     bundlerURL,
-		EntrypointAddr: entrypointAddr,
-		Signer:         signer,
-		ProvidedHashes: hashes,
-		CachedHashes:   make([]common.Hash, 0, len(userOps)),
-		ChainIDs:       chainIDs,
-		ChainMonikers:  chainMonikers,
+		Nodes:                nodes,
+		BundlerURL:           bundlerURL,
+		EntrypointAddr:       entrypointAddr,
+		Signer:               signer,
+		ProvidedHashes:       hashes,
+		CachedHashes:         make([]common.Hash, 0, len(userOps)),
+		ChainIDs:             chainIDs,
+		ChainMonikers:        chainMonikers,
+		GenPrefixedKernelSig: kernelSig,
+		GenKernelEnableSig:   enableSig,
 	}, nil
 }
 
@@ -94,7 +101,9 @@ func (p *UserOpProcessor) set4337NonceForOp(op *model.UserOperation, i int, user
 
 // toSubmitOnChain checks if the UserOperation should be submitted on-chain.
 // Only one UserOperation is ever submitted on-chain.
-func (p *UserOpProcessor) toSubmitOnChain(userOps []*model.UserOperation, submissionAction SubmissionType, op *model.UserOperation) bool {
+func (p *UserOpProcessor) toSubmitOnChain(
+	userOps []*model.UserOperation, submissionAction SubmissionType, op *model.UserOperation,
+) bool {
 	return len(userOps) == 1 && ((submissionAction == BundlerSubmit && userop.IsAggregate(op)) || submissionAction == DirectSubmit)
 }
 
@@ -132,7 +141,9 @@ func (p *UserOpProcessor) generateCrossChainHash(op *model.UserOperation) (commo
 // 2. If not a bundler/ direct submit and not cross-chain, set the EIP-4337 nonce and compute the hash.
 // 3. If a cross-chain operation under bundler/direct conditions, compute a cross-chain hash.
 // 4. Otherwise, compute the default hash.
-func (p *UserOpProcessor) determineUserOpHash(op *model.UserOperation, i int, userOps []*model.UserOperation, submissionAction SubmissionType) (common.Hash, error) {
+func (p *UserOpProcessor) determineUserOpHash(
+	op *model.UserOperation, i int, userOps []*model.UserOperation, submissionAction SubmissionType,
+) (common.Hash, error) {
 	// Use provided hash if available
 	if hash := p.getProvidedHash(i); hash != (common.Hash{}) {
 		fmt.Printf("Provided UserOp hash: %s for ChainID: %s\n", hash, p.ChainIDs[i])
@@ -154,7 +165,9 @@ func (p *UserOpProcessor) determineUserOpHash(op *model.UserOperation, i int, us
 		if err != nil {
 			return common.Hash{}, err
 		}
-		fmt.Printf("Generated XChain UserOp hash: %s for ChainID: %s, moniker: %s\n", hash, p.ChainIDs[i], p.ChainMonikers[i])
+		fmt.Printf(
+			"Generated XChain UserOp hash: %s for ChainID: %s, moniker: %s\n", hash, p.ChainIDs[i], p.ChainMonikers[i],
+		)
 		return hash, nil
 	}
 
@@ -264,8 +277,7 @@ func (p *UserOpProcessor) Set4337Nonce(op *model.UserOperation, chainMoniker str
 func (p *UserOpProcessor) signAndPrintUserOps(userOps []*model.UserOperation) error {
 	// UserOperations.
 	// For multiple UserOperations, it prints the UserOperations with xCallData
-	// values appended to the signature, enabling on-chain execution or simulation
-	// without permanent effects.
+	// values appended to the signature
 	// It then prepares the userOperations for sending to the bundler and solver by
 	// aggregating the UserOperations and prints the aggregated UserOperation.
 	if p.BundlerURL == "" {
@@ -389,7 +401,9 @@ func (p *UserOpProcessor) submit(ctx context.Context, chainID *big.Int, signedUs
 		return config.NewError("failed to get gas parameters", err)
 	}
 
-	opts := createTransactionOpts(p.Nodes[config.DefaultRPCURLKey].Node.EthClient, chainID, p.EntrypointAddr, p.Signer, signedUserOp, gasParams)
+	opts := createTransactionOpts(
+		p.Nodes[config.DefaultRPCURLKey].Node.EthClient, chainID, p.EntrypointAddr, p.Signer, signedUserOp, gasParams,
+	)
 
 	if err := executeUserOperation(opts); err != nil {
 		return config.NewError("failed executing user operation", err)

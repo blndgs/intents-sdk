@@ -59,7 +59,7 @@ func ReadConf(quiet bool) (NodesMap, string, common.Address, *signer.EOA, error)
 			if strings.Contains(key, DefaultRPCURLKey) {
 				if foundDefaultRPCURL {
 					return nil, "", common.Address{}, nil,
-						NewError("multiple default RPC URLs found: Add only one environment variable with 'default' in the key, e.g. ETH_NODE_URL_DEFAULT", nil)
+					return nil, NewError("multiple default RPC URLs found: Add only one environment variable with 'default' in the key, e.g. ETH_NODE_URL_DEFAULT", nil)
 				}
 				foundDefaultRPCURL = true
 				// save the default RPC URL with 'default' as the key
@@ -80,9 +80,7 @@ func ReadConf(quiet bool) (NodesMap, string, common.Address, *signer.EOA, error)
 	}
 
 	if !foundDefaultRPCURL {
-		return nil, "", common.Address{}, nil,
-			NewError(
-				"no default RPC URL found: Add an environment variable with 'default' in the key, e.g. ETH_NODE_URL_DEFAULT", nil)
+		return nil, NewError("no default RPC URL found: Add an environment variable with 'default' in the key, e.g. ETH_NODE_URL_DEFAULT", nil)
 	}
 
 	prvKeyHex := viper.GetString(signerPrvKey)
