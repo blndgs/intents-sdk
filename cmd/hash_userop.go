@@ -19,8 +19,8 @@ var HashUserOpCmd = &cobra.Command{
 	Use:   "hash",
 	Short: "Print the userOp's hash",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Read configuration and initialize necessary components.
-		nodes, _, entrypointAddr, eoaSigner, err := config.ReadConf(false)
+		// Read configuration and initialize the necessary parts.
+		conf, err := config.ReadConf(false)
 		if err != nil {
 			return config.NewError("failed to read configuration", err)
 		}
@@ -35,7 +35,7 @@ var HashUserOpCmd = &cobra.Command{
 			return config.NewError("invalid number of user operations", fmt.Errorf("expected 1 userOp, got %d", len(userOps)))
 		}
 
-		chainMonikers, err := utils.GetChainMonikers(cmd, nodes, len(userOps))
+		chainMonikers, err := utils.GetChainMonikers(cmd, conf.NodesMap, len(userOps))
 		if err != nil {
 			return config.NewError("failed to get chain monikers", err)
 		}
@@ -45,7 +45,7 @@ var HashUserOpCmd = &cobra.Command{
 			return config.NewError("failed to get hashes", err)
 		}
 
-		p, err := NewUserOpProcessor(userOps, nodes, "", entrypointAddr, eoaSigner, providedHashes, chainMonikers)
+		p, err := NewUserOpProcessor(userOps, conf.NodesMap, "", conf.EntryPointAddr, conf.Signer, providedHashes, chainMonikers, false, false)
 		if err != nil {
 			return config.NewError("failed to create user operation processor", err)
 		}

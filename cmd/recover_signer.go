@@ -25,7 +25,7 @@ var RecoverSignerCmd = &cobra.Command{
 	Use:   "recover",
 	Short: "Recover the userOp signature's signer. Signatures with appended xData are supported. with 1 or more hashes and a signature",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		nodes, _, entrypointAddr, eoaSigner, err := config.ReadConf(true)
+		conf, err := config.ReadConf(true)
 		if err != nil {
 			return config.NewError("failed to read configuration", err)
 		}
@@ -43,28 +43,28 @@ var RecoverSignerCmd = &cobra.Command{
 			return config.NewError("Only a single userOp is supported", err)
 		}
 
-		chainMonikers, err := utils.GetChainMonikers(cmd, nodes, len(userOps))
+		chainMonikers, err := utils.GetChainMonikers(cmd, conf.NodesMap, len(userOps))
 		if len(chainMonikers) > 2 || err != nil {
 			return config.NewError("Only 1 additional chain is supported besides the default", err)
 		}
 
 		var chainID *big.Int
 		if len(chainMonikers) == 1 {
-			chainID = nodes[chainMonikers[0]].ChainID
-			fmt.Printf("Recovering for the default chain: %s\n", nodes[chainMonikers[0]].ChainID)
+			chainID = conf.NodesMap[chainMonikers[0]].ChainID
+			fmt.Printf("Recovering for the default chain: %s\n", conf.NodesMap[chainMonikers[0]].ChainID)
 		} else {
-			chainID = nodes[chainMonikers[1]].ChainID
-			fmt.Printf("Recovering for the provided chain: %s\n", nodes[chainMonikers[1]].ChainID)
+			chainID = conf.NodesMap[chainMonikers[1]].ChainID
+			fmt.Printf("Recovering for the provided chain: %s\n", conf.NodesMap[chainMonikers[1]].ChainID)
 		}
 
 		op := userOps[0]
 
-		opHash, err := getUserOpHash(op, entrypointAddr, chainID)
+		opHash, err := getUserOpHash(op, conf.EntryPointAddr, chainID)
 		if err != nil {
 			return config.NewError("could not generate userOp hash", err)
 		}
 
-		recoverSigner(opHash, op.Signature[:op.GetSignatureEndIdx()], eoaSigner.Address.String())
+		recoverSigner(opHash, op.Signature[:op.GetSignatureEndIdx()], conf.Signer.Address.String())
 		displayUserOpStatus(op, chainID)
 
 		if op.IsCrossChainOperation() {

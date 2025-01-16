@@ -35,7 +35,7 @@ var OnChainUserOpCmd = &cobra.Command{
 	Short: "Submit a signed userOp on-chain bypassing the bundler",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Read configuration and initialize necessary components.
-		nodes, bundlerURL, entrypointAddr, eoaSigner, err := config.ReadConf(false)
+		conf, err := config.ReadConf(false)
 		if err != nil {
 			return config.NewError("failed to read configuration", err)
 		}
@@ -47,12 +47,12 @@ var OnChainUserOpCmd = &cobra.Command{
 		if err != nil {
 			return config.NewError("failed to get hashes", err)
 		}
-		chainMonikers, err := utils.GetChainMonikers(cmd, nodes, len(userOps))
+		chainMonikers, err := utils.GetChainMonikers(cmd, conf.NodesMap, len(userOps))
 		if err != nil {
 			return config.NewError("failed to get chain monikers", err)
 		}
 
-		processor, err := NewUserOpProcessor(userOps, nodes, bundlerURL, entrypointAddr, eoaSigner, hashes, chainMonikers)
+		processor, err := NewUserOpProcessor(userOps, conf.NodesMap, conf.BundlerURL, conf.EntryPointAddr, conf.Signer, hashes, chainMonikers, false, false)
 		if err != nil {
 			return config.NewError("failed to create user operation processor", err)
 		}
