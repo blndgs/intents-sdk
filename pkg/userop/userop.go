@@ -49,9 +49,11 @@ func GenXHash(opHashes []common.Hash) common.Hash {
 	sortedHashes := make([]common.Hash, len(opHashes))
 	copy(sortedHashes, opHashes)
 
-	slices.SortFunc(sortedHashes, func(a, b common.Hash) int {
-		return bytes.Compare(a[:], b[:])
-	})
+	slices.SortFunc(
+		sortedHashes, func(a, b common.Hash) int {
+			return bytes.Compare(a[:], b[:])
+		},
+	)
 
 	// hash the sorted concatenated sortedHashes
 	var concatenatedHashes []byte

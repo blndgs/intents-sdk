@@ -35,7 +35,7 @@ var OnChainUserOpCmd = &cobra.Command{
 	Short: "Submit a signed userOp on-chain bypassing the bundler",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Read configuration and initialize necessary components.
-		conf, err := config.ReadConf(false)
+		configuration, err := config.ReadConf(false)
 		if err != nil {
 			return config.NewError("failed to read configuration", err)
 		}
@@ -47,7 +47,7 @@ var OnChainUserOpCmd = &cobra.Command{
 		if err != nil {
 			return config.NewError("failed to get hashes", err)
 		}
-		chainMonikers, err := utils.GetChainMonikers(cmd, conf.NodesMap, len(userOps))
+		chainMonikers, err := utils.GetChainMonikers(cmd, configuration.NodesMap, len(userOps))
 		if err != nil {
 			return config.NewError("failed to get chain monikers", err)
 		}
@@ -92,11 +92,16 @@ func getGasParams(ctx context.Context, rpc *geth.Client) (config.GasParams, erro
 	}, nil
 }
 
-func createTransactionOpts(rpcClient *geth.Client, chainID *big.Int, entrypointAddr common.Address, eoaSigner *signer.EOA, signedUserOp *model.UserOperation, gasParams config.GasParams) transaction.Opts {
+func createTransactionOpts(
+	rpcClient *geth.Client, chainID *big.Int, entrypointAddr common.Address, eoaSigner *signer.EOA,
+	signedUserOp *model.UserOperation, gasParams config.GasParams,
+) transaction.Opts {
 	stackupUserOp := stackup_userop.UserOperation(*signedUserOp)
 
 	// Calculate gas limit with buffer for Squid operations
-	gasLimit := new(big.Int).Add(new(big.Int).Add(signedUserOp.PreVerificationGas, signedUserOp.VerificationGasLimit), signedUserOp.CallGasLimit).Uint64() + 100_000
+	gasLimit := new(big.Int).Add(
+		new(big.Int).Add(signedUserOp.PreVerificationGas, signedUserOp.VerificationGasLimit), signedUserOp.CallGasLimit,
+	).Uint64() + 100_000
 
 	return transaction.Opts{
 		Eth:         rpcClient,
