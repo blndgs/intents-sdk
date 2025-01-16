@@ -31,21 +31,25 @@ const (
 )
 
 type UserOpProcessor struct {
-	Nodes                config.NodesMap
-	BundlerURL           string
-	EntrypointAddr       common.Address
-	Signer               *signer.EOA
-	ProvidedHashes       []common.Hash
-	CachedHashes         []common.Hash
-	ChainMonikers        []string
-	ChainIDs             []*big.Int
-	GenPrefixedKernelSig bool
-	GenKernelEnableSig   bool
+	Nodes                  config.NodesMap
+	BundlerURL             string
+	EntrypointAddr         common.Address
+	KernelFactoryAddress   common.Address
+	KernelValidatorAddress common.Address
+	KernelExecutorAddress  common.Address
+	Signer                 *signer.EOA
+	ProvidedHashes         []common.Hash
+	CachedHashes           []common.Hash
+	ChainMonikers          []string
+	ChainIDs               []*big.Int
+	GenPrefixedKernelSig   bool
+	GenKernelEnableSig     bool
 }
 
 func NewUserOpProcessor(
-	userOps []*model.UserOperation, nodes config.NodesMap, bundlerURL string, entrypointAddr common.Address,
-	signer *signer.EOA, hashes []common.Hash, chainMonikers []string, kernelSig, enableSig bool,
+	userOps []*model.UserOperation, nodes config.NodesMap, bundlerURL string,
+	entrypointAddr, kernelFactoryAddr, kernelValidatorAddr, kernelExecutorAddr common.Address, signer *signer.EOA,
+	hashes []common.Hash, chainMonikers []string, kernelSig, enableSig bool,
 ) (*UserOpProcessor, error) {
 	if len(userOps) == 0 {
 		return nil, config.NewError("userOps is empty", nil)

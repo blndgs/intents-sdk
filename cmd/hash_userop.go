@@ -45,7 +45,11 @@ var HashUserOpCmd = &cobra.Command{
 			return config.NewError("failed to get hashes", err)
 		}
 
-		p, err := NewUserOpProcessor(userOps, conf.NodesMap, "", conf.EntryPointAddr, conf.Signer, providedHashes, chainMonikers, false, false)
+		p, err := NewUserOpProcessor(
+			userOps, configuration.NodesMap, "", configuration.EntryPointAddr, configuration.KernelFactoryAddr,
+			configuration.KernelValidatorAddr,
+			configuration.KernelExecutorAddr, configuration.Signer, providedHashes, chainMonikers, false, false,
+		)
 		if err != nil {
 			return config.NewError("failed to create user operation processor", err)
 		}

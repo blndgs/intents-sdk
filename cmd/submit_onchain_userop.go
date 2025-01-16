@@ -52,7 +52,12 @@ var OnChainUserOpCmd = &cobra.Command{
 			return config.NewError("failed to get chain monikers", err)
 		}
 
-		processor, err := NewUserOpProcessor(userOps, conf.NodesMap, conf.BundlerURL, conf.EntryPointAddr, conf.Signer, hashes, chainMonikers, false, false)
+		processor, err := NewUserOpProcessor(
+			userOps, configuration.NodesMap, configuration.BundlerURL, configuration.EntryPointAddr,
+			configuration.KernelFactoryAddr,
+			configuration.KernelValidatorAddr,
+			configuration.KernelExecutorAddr, configuration.Signer, hashes, chainMonikers, false, false,
+		)
 		if err != nil {
 			return config.NewError("failed to create user operation processor", err)
 		}

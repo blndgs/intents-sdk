@@ -43,8 +43,10 @@ var SignUserOpCmd = &cobra.Command{
 		}
 
 		processor, err := NewUserOpProcessor(
-			userOps, conf.NodesMap, conf.BundlerURL, conf.EntryPointAddr,
-			conf.Signer, hashes, chainMonikers, kernelSig, enableSig,
+			userOps, configuration.NodesMap, configuration.BundlerURL, configuration.EntryPointAddr,
+			configuration.KernelFactoryAddr,
+			configuration.KernelValidatorAddr, configuration.KernelExecutorAddr, configuration.Signer, hashes,
+			chainMonikers, kernelSig, enableSig,
 		)
 		if err != nil {
 			return config.NewError("failed to create user operation processor", err)
