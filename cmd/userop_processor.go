@@ -31,14 +31,16 @@ const (
 )
 
 type UserOpProcessor struct {
-	Nodes          config.NodesMap
-	BundlerURL     string
-	EntrypointAddr common.Address
-	Signer         *signer.EOA
-	ProvidedHashes []common.Hash
-	CachedHashes   []common.Hash
-	ChainMonikers  []string
-	ChainIDs       []*big.Int
+	Nodes                config.NodesMap
+	BundlerURL           string
+	EntrypointAddr       common.Address
+	Signer               *signer.EOA
+	ProvidedHashes       []common.Hash
+	CachedHashes         []common.Hash
+	ChainMonikers        []string
+	ChainIDs             []*big.Int
+	GenPrefixedKernelSig bool
+	GenKernelEnableSig   bool
 }
 
 func NewUserOpProcessor(

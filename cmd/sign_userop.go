@@ -27,6 +27,12 @@ var SignUserOpCmd = &cobra.Command{
 		if err != nil {
 			return config.NewError("failed to get user operations", err)
 		}
+
+		kernelSig, enableSig, err := utils.GetKernelOptions(cmd)
+		if err != nil {
+			return config.NewError("failed to get kernel options", err)
+		}
+
 		hashes, err := utils.GetHashes(cmd)
 		if err != nil {
 			return config.NewError("failed to get hashes", err)

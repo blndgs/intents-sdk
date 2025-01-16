@@ -53,6 +53,9 @@ func ReadConf(quiet bool) (*Config, error) {
 	const signerPrvKey = "SIGNER_PRIVATE_KEY"
 	const bundlerUrl = "BUNDLER_URL"
 	const epAddr = "ENTRYPOINT_ADDR"
+	const kernelFactoryAddress = "KERNEL_V2_FACTORY_ADDRESS"
+	const kernelValidatorAddress = "KERNEL_VALIDATOR_ADDR"
+	const kernelExecutorAddress = "KERNEL_EXECUTOR_ADDR"
 
 	viper.SetConfigName(".env")
 	viper.SetConfigType("env")
@@ -99,12 +102,18 @@ func ReadConf(quiet bool) (*Config, error) {
 	}
 	bundlerURL := viper.GetString(bundlerUrl)
 	entryPointAddr := common.HexToAddress(viper.GetString(epAddr))
+	kernelFactoryAddr := common.HexToAddress(viper.GetString(kernelFactoryAddress))
+	kernelValidatorAddr := common.HexToAddress(viper.GetString(kernelValidatorAddress))
+	kernelExecutorAddr := common.HexToAddress(viper.GetString(kernelExecutorAddress))
 
 	if !quiet {
 		fmt.Printf("Signer private key: %s\n", hexutil.Encode(crypto.FromECDSA(s.PrivateKey)))
 		fmt.Printf("Public key: %s\n", hexutil.Encode(crypto.FromECDSAPub(s.PublicKey))[4:])
 		fmt.Printf("Address: %s\n", s.Address)
 		fmt.Printf("Entrypoint Address: %s\n", entryPointAddr)
+		fmt.Printf("Kernel Factory Address: %s\n", kernelFactoryAddr)
+		fmt.Printf("Kernel Validator Address: %s\n", kernelValidatorAddr)
+		fmt.Printf("Kernel Executor Address: %s\n", kernelExecutorAddr)
 		for moniker := range nodeURLs {
 			fmt.Printf("Node moniker: %s url: %s\n", moniker, nodeURLs[moniker].URLStr)
 		}
