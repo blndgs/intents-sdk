@@ -71,16 +71,19 @@ func NewUserOpProcessor(
 	}
 
 	return &UserOpProcessor{
-		Nodes:                nodes,
-		BundlerURL:           bundlerURL,
-		EntrypointAddr:       entrypointAddr,
-		Signer:               signer,
-		ProvidedHashes:       hashes,
-		CachedHashes:         make([]common.Hash, 0, len(userOps)),
-		ChainIDs:             chainIDs,
-		ChainMonikers:        chainMonikers,
-		GenPrefixedKernelSig: kernelSig,
-		GenKernelEnableSig:   enableSig,
+		Nodes:                  nodes,
+		BundlerURL:             bundlerURL,
+		EntrypointAddr:         entrypointAddr,
+		KernelFactoryAddress:   kernelFactoryAddr,
+		KernelValidatorAddress: kernelValidatorAddr,
+		KernelExecutorAddress:  kernelExecutorAddr,
+		Signer:                 signer,
+		ProvidedHashes:         hashes,
+		CachedHashes:           make([]common.Hash, 0, len(userOps)),
+		ChainIDs:               chainIDs,
+		ChainMonikers:          chainMonikers,
+		GenPrefixedKernelSig:   kernelSig,
+		GenKernelEnableSig:     enableSig,
 	}, nil
 }
 
