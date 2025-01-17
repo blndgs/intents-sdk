@@ -230,6 +230,8 @@ func (p *UserOpProcessor) ProcessUserOps(userOps []*model.UserOperation, submiss
 	}
 
 	if len(userOps[0].Signature) == 0 || len(userOps) > 1 {
+		// Unsigned userOp(s) or multiple userOps:
+		// Set signature!
 		if err := p.signAndPrintUserOps(userOps); err != nil {
 			return err
 		}

@@ -91,6 +91,9 @@ const handleOpABI = `[
   }
 ]`
 
+// PrepareHandleOpCalldata moves the IntentJSON to the signature field and
+// empties the calldata field to allow an Intent EVM solution to be
+// populated. Applies only to cross-chain operations that are not aggregated.
 func PrepareHandleOpCalldata(op model.UserOperation, beneficiary common.Address) (string, error) {
 	if len(op.CallData) > 0 && op.IsCrossChainOperation() && !userop.IsAggregate(&op) {
 		iJSON, err := op.GetIntentJSON()
