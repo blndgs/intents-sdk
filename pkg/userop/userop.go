@@ -13,6 +13,31 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+func getKernelPrefix(kernelEnabledSig, kernelSig bool) uint8 {
+	const (
+		// Kernel prefix values
+		// 0 is the default prefix value
+		// 1 is the validation plugin prefix value
+		// Used for plugin-based validation after a function has been enabled
+		// with a specific validator
+		// This is the prefix you use for all subsequent calls after enabling
+		//a function with a validator
+		validationPlugin1 = 1
+		// 2 is the validation enabled prefix value. This mode allows setting
+		// up the validator-executor mapping for a function
+		validationEnabled2 = 2
+	)
+
+	switch {
+	case kernelEnabledSig:
+		return validationEnabled2
+	case kernelSig:
+		return validationPlugin1
+	}
+
+	return 0
+}
+
 // SignUserOperations is a helper function to sign one or multiple UserOperations.
 func SignUserOperations(signer *signer.EOA, hashes []common.Hash, userOps []*model.UserOperation) error {
 	messageHash := GenXHash(hashes)
@@ -78,6 +103,39 @@ func GenKernelEnableCalldata(
 
 	// Combine selector with packed parameters
 	return append(execBatchSelector, packed...), nil
+}
+
+// PrefixSignature adds or resets the Kernel wallet prefix to the signature
+// for a 69-byte total, with the first 4 bytes representing the prefix (which
+// can be 0, 1, or 2) followed by the 65 ECDSA signature bytes.
+func PrefixSignature(signature []byte, prefixValue uint8) ([]byte, error) {
+	if prefixValue > 2 {
+		return nil, fmt.Errorf("invalid prefix value > 2 -> %d", prefixValue)
+	}
+
+	sigLen := len(signature)
+	switch sigLen {
+	case 65:
+		// Needs a new 69-byte slice
+		prefixed := make([]byte, 69)
+
+		// Write prefix (BigEndian: the last byte in these 4 is prefixValue)
+		// 0x000 + prefix value of 0, 1, or 2
+		binary.BigEndian.PutUint32(prefixed[:4], uint32(prefixValue))
+
+		// Copy 65 bytes of the signature
+		copy(prefixed[4:], signature)
+
+		return prefixed, nil
+
+	case 69:
+		// Already has 4 prefix bytes, update them with the new prefix
+		binary.BigEndian.PutUint32(signature[:4], uint32(prefixValue))
+		return signature, nil
+
+	default:
+		return nil, fmt.Errorf("invalid signature length -> %d", sigLen)
+	}
 }
 
 // GenXHash computes the hash of multiple UserOperations' hashes.
