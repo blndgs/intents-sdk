@@ -295,7 +295,23 @@ func (p *UserOpProcessor) signAndPrintUserOps(userOps []*model.UserOperation) er
 		return config.NewError("bundler URL is not set", nil)
 	}
 
-	if err := userop.SignUserOperations(p.Signer, p.CachedHashes, userOps); err != nil {
+	if p.GenKernelEnableSig {
+		// Override the userOps calldata value with the Kernel enable calldata
+		callData, err := userop.GenKernelEnableCalldata(
+			p.Signer.Address, p.KernelValidatorAddress, p.KernelExecutorAddress,
+		)
+		if err != nil {
+			return config.NewError("failed to generate kernel enable calldata", err)
+		}
+		for _, op := range userOps {
+			op.CallData = callData
+		}
+	}
+
+	if err := userop.SignUserOperations(
+		p.Signer, p.CachedHashes, userOps, p.GenKernelEnableSig,
+		p.GenPrefixedKernelSig,
+	); err != nil {
 		return config.NewError(fmt.Sprintf("failed signing user operations of count:%d", len(userOps)), err)
 	}
 

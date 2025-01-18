@@ -36,6 +36,50 @@ func SignUserOperations(signer *signer.EOA, hashes []common.Hash, userOps []*mod
 	return nil
 }
 
+// GenKernelEnableCalldata generates the calldata to enable the Intent Validator for the
+// execValueBatch function.
+func GenKernelEnableCalldata(
+	ownerAddress common.Address, kernelValidatorAddr,
+	kernelExecutorAddr common.Address,
+) ([]byte, error) {
+	// Function selector for enable(bytes)
+	enableSelector := crypto.Keccak256([]byte("enable(bytes)"))[0:4]
+
+	// Pack owner address as bytes
+	ownerBytes := ownerAddress.Bytes()
+
+	// Create the enable calldata for the validator
+	validatorEnableCalldata := append(enableSelector, ownerBytes...)
+
+	// Function selector for execValueBatch(uint256[],address[],bytes[])
+	execBatchSelector := crypto.Keccak256([]byte("execValueBatch(uint256[],address[],bytes[])"))[0:4]
+
+	// Create arrays for execValueBatch parameters
+	values := []*big.Int{big.NewInt(0)} // No ETH transfer
+	destinations := []common.Address{kernelValidatorAddr}
+	functionCalls := [][]byte{validatorEnableCalldata}
+
+	// Create ABI arguments
+	uint256ArrayType, _ := abi.NewType("uint256[]", "", nil)
+	addressArrayType, _ := abi.NewType("address[]", "", nil)
+	bytesArrayType, _ := abi.NewType("bytes[]", "", nil)
+
+	arguments := abi.Arguments{
+		{Type: uint256ArrayType},
+		{Type: addressArrayType},
+		{Type: bytesArrayType},
+	}
+
+	// Pack the parameters
+	packed, err := arguments.Pack(values, destinations, functionCalls)
+	if err != nil {
+		return nil, err
+	}
+
+	// Combine selector with packed parameters
+	return append(execBatchSelector, packed...), nil
+}
+
 // GenXHash computes the hash of multiple UserOperations' hashes.
 // It concatenates the hashes, sorts them, and hashes the result.
 // The result is the xChainHash.
