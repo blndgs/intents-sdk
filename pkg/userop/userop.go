@@ -3,7 +3,11 @@ package userop
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"encoding/binary"
 	"fmt"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
 
 	"github.com/blndgs/intents-cli/pkg/config"
 	"github.com/blndgs/model"
@@ -39,7 +43,11 @@ func getKernelPrefix(kernelEnabledSig, kernelSig bool) uint8 {
 }
 
 // SignUserOperations is a helper function to sign one or multiple UserOperations.
-func SignUserOperations(signer *signer.EOA, hashes []common.Hash, userOps []*model.UserOperation) error {
+func SignUserOperations(
+	signer *signer.EOA, hashes []common.Hash,
+	userOps []*model.UserOperation, kernelEnabledSig, kernelSig bool,
+) error {
+
 	messageHash := GenXHash(hashes)
 	signerAddr := signer.Address.String()
 	fmt.Printf("Signing UserOperations with address: %s\n", signerAddr)
@@ -48,14 +56,22 @@ func SignUserOperations(signer *signer.EOA, hashes []common.Hash, userOps []*mod
 		return err
 	}
 
-	// Assign the signature to all UserOperations
-	for _, op := range userOps {
-		op.Signature = signature
-	}
-
-	// Verify the signature
+	// Verify the signature before any potential prefixing
 	if !VerifyHashSignature(messageHash, signature, signer.PublicKey) {
 		return fmt.Errorf("signature is invalid")
+	}
+
+	finalSignature := signature
+	if kernelSig || kernelEnabledSig {
+		finalSignature, err = PrefixSignature(signature, getKernelPrefix(kernelEnabledSig, kernelSig))
+		if err != nil {
+			return fmt.Errorf("failed to prefix signature: %w", err)
+		}
+	}
+
+	// Assign the final signature to all UserOperations
+	for _, op := range userOps {
+		op.Signature = finalSignature
 	}
 
 	return nil

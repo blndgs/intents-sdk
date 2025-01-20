@@ -68,22 +68,24 @@ func TestMatchSoliditySignature(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			hash := tc.userOp.GetUserOpHash(tc.entryPointAddr, tc.chainID)
-			hashes := []common.Hash{hash}
-			userOps := []*model.UserOperation{&tc.userOp}
-			err := userop.SignUserOperations(tc.signer, hashes, userOps)
-			require.NoError(t, err)
-			isValid, err := userop.VerifySignature(tc.signer.PublicKey, userOps, hashes)
-			require.NoError(t, err, "error verifying signature for %s", tc.userOp)
-			require.True(t, isValid, "signature is invalid for %s", tc.userOp)
-			actualSig := fmt.Sprintf("%x", tc.userOp.Signature)
-			require.Equal(t, tc.expectedSignature, actualSig)
-			genSig, err := userop.GenerateSignature(hash, tc.signer.PrivateKey)
-			genSigSigned := fmt.Sprintf("%x", genSig)
-			require.NoError(t, err)
-			require.Equal(t, tc.expectedSignature, genSigSigned)
-		})
+		t.Run(
+			tc.name, func(t *testing.T) {
+				hash := tc.userOp.GetUserOpHash(tc.entryPointAddr, tc.chainID)
+				hashes := []common.Hash{hash}
+				userOps := []*model.UserOperation{&tc.userOp}
+				err := userop.SignUserOperations(tc.signer, hashes, userOps, false, false)
+				require.NoError(t, err)
+				isValid, err := userop.VerifySignature(tc.signer.PublicKey, userOps, hashes)
+				require.NoError(t, err, "error verifying signature for %s", tc.userOp)
+				require.True(t, isValid, "signature is invalid for %s", tc.userOp)
+				actualSig := fmt.Sprintf("%x", tc.userOp.Signature)
+				require.Equal(t, tc.expectedSignature, actualSig)
+				genSig, err := userop.GenerateSignature(hash, tc.signer.PrivateKey)
+				genSigSigned := fmt.Sprintf("%x", genSig)
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedSignature, genSigSigned)
+			},
+		)
 	}
 }
 
@@ -140,24 +142,26 @@ func TestSignConventionalUserOps(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			var userOp model.UserOperation
-			err := json.Unmarshal([]byte(tc.userOp), &userOp)
-			require.NoError(t, err)
-
-			hash := userOp.GetUserOpHash(tc.entryPointAddr, tc.chainID)
-			hashes := []common.Hash{hash}
-			userOps := []*model.UserOperation{&userOp}
-			err = userop.SignUserOperations(tc.signer, hashes, userOps)
-			if tc.wantErr {
-				require.Error(t, err)
-			} else {
+		t.Run(
+			tc.name, func(t *testing.T) {
+				var userOp model.UserOperation
+				err := json.Unmarshal([]byte(tc.userOp), &userOp)
 				require.NoError(t, err)
-				valid, err := userop.VerifySignature(tc.signer.PublicKey, userOps, hashes)
-				require.NoError(t, err, "error verifying signature for %s", tc.userOp)
-				require.True(t, valid, "signature is invalid for %s", tc.userOp)
-			}
-		})
+
+				hash := userOp.GetUserOpHash(tc.entryPointAddr, tc.chainID)
+				hashes := []common.Hash{hash}
+				userOps := []*model.UserOperation{&userOp}
+				err = userop.SignUserOperations(tc.signer, hashes, userOps, false, false)
+				if tc.wantErr {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+					valid, err := userop.VerifySignature(tc.signer.PublicKey, userOps, hashes)
+					require.NoError(t, err, "error verifying signature for %s", tc.userOp)
+					require.True(t, valid, "signature is invalid for %s", tc.userOp)
+				}
+			},
+		)
 	}
 }
 
@@ -224,41 +228,43 @@ func TestIntentUserOpSign(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Parse the userOp JSON string into a map
-			var userOpMap map[string]interface{}
-			dec := json.NewDecoder(strings.NewReader(tc.userOp))
-			dec.UseNumber()
-			err := dec.Decode(&userOpMap)
-			require.NoError(t, err, "error parsing user operation JSON")
+		t.Run(
+			tc.name, func(t *testing.T) {
+				// Parse the userOp JSON string into a map
+				var userOpMap map[string]interface{}
+				dec := json.NewDecoder(strings.NewReader(tc.userOp))
+				dec.UseNumber()
+				err := dec.Decode(&userOpMap)
+				require.NoError(t, err, "error parsing user operation JSON")
 
-			// Process the callData field using the helper function
-			if callData, ok := userOpMap["callData"].(string); ok {
-				modifiedCallData, err := processCallData(callData)
-				require.NoError(t, err, "error processing callData")
-				userOpMap["callData"] = modifiedCallData
-			}
+				// Process the callData field using the helper function
+				if callData, ok := userOpMap["callData"].(string); ok {
+					modifiedCallData, err := processCallData(callData)
+					require.NoError(t, err, "error processing callData")
+					userOpMap["callData"] = modifiedCallData
+				}
 
-			// Marshal the modified userOpMap back to JSON
-			modifiedUserOpJSON, err := json.Marshal(userOpMap)
-			require.NoError(t, err, "error marshaling modified user operation JSON")
+				// Marshal the modified userOpMap back to JSON
+				modifiedUserOpJSON, err := json.Marshal(userOpMap)
+				require.NoError(t, err, "error marshaling modified user operation JSON")
 
-			// Unmarshal into userOp struct
-			var userOp model.UserOperation
-			err = json.Unmarshal(modifiedUserOpJSON, &userOp)
-			require.NoError(t, err)
-			hashes := []common.Hash{userOp.GetUserOpHash(tc.entryPointAddr, tc.chainID)}
-			userOps := []*model.UserOperation{&userOp}
-			err = userop.SignUserOperations(tc.signer, hashes, userOps)
-			if tc.wantErr {
-				require.Error(t, err)
-			} else {
+				// Unmarshal into userOp struct
+				var userOp model.UserOperation
+				err = json.Unmarshal(modifiedUserOpJSON, &userOp)
 				require.NoError(t, err)
-				valid, err := userop.VerifySignature(tc.signer.PublicKey, userOps, hashes)
-				require.NoError(t, err, "error verifying signature for %s", tc.userOp)
-				require.True(t, valid, "signature is invalid for %s", tc.userOp)
-			}
-		})
+				hashes := []common.Hash{userOp.GetUserOpHash(tc.entryPointAddr, tc.chainID)}
+				userOps := []*model.UserOperation{&userOp}
+				err = userop.SignUserOperations(tc.signer, hashes, userOps, false, false)
+				if tc.wantErr {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+					valid, err := userop.VerifySignature(tc.signer.PublicKey, userOps, hashes)
+					require.NoError(t, err, "error verifying signature for %s", tc.userOp)
+					require.True(t, valid, "signature is invalid for %s", tc.userOp)
+				}
+			},
+		)
 	}
 }
 

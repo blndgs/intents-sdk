@@ -19,7 +19,7 @@ func TestCrossChainECDSASignature_MultipleUserOps(t *testing.T) {
 	account, userOps, hashes := setupMultipleUserOps(t)
 
 	// Generate cross-chain signature
-	err := userop.SignUserOperations(account, hashes, userOps)
+	err := userop.SignUserOperations(account, hashes, userOps, false, false)
 	require.NoError(t, err)
 
 	// Verify the signature
@@ -55,14 +55,18 @@ func TestCrossChainECDSASignature_SingleUserOpWithHash(t *testing.T) {
 	account, entryPointAddr, chainIDs, userOps := setupSingleUserOp(t)
 
 	// Generate cross-chain signature
-	hashes := []common.Hash{userOps[0].GetUserOpHash(entryPointAddr, chainIDs[0]), userOps[1].GetUserOpHash(entryPointAddr, chainIDs[1])}
+	hashes := []common.Hash{
+		userOps[0].GetUserOpHash(entryPointAddr, chainIDs[0]), userOps[1].GetUserOpHash(entryPointAddr, chainIDs[1]),
+	}
 
 	// Use destChainID and destUserOp for signing
-	err := userop.SignUserOperations(account, hashes, userOps)
+	err := userop.SignUserOperations(account, hashes, userOps, false, false)
 	require.NoError(t, err)
 
 	// Verify the signature of the 2nd UserOperation that should be identical to the first operation
-	require.Equal(t, userOps[0].Signature, userOps[1].Signature, "Signatures do not match for cross-chain UserOperations")
+	require.Equal(
+		t, userOps[0].Signature, userOps[1].Signature, "Signatures do not match for cross-chain UserOperations",
+	)
 
 	messageHash := userop.GenXHash(hashes)
 	isValid := userop.VerifyHashSignature(messageHash, userOps[0].Signature, account.PublicKey)
@@ -77,7 +81,10 @@ func TestCrossChainECDSASignature_SingleUserOpWithHash(t *testing.T) {
 func setupMultipleUserOps(t *testing.T) (*signer.EOA, []*model.UserOperation, []common.Hash) {
 	account, entryPointAddr, sourceChainID, destChainID, sourceUserOp, destUserOp := createUserOps(t)
 	userOps := []*model.UserOperation{sourceUserOp, destUserOp}
-	hashes := []common.Hash{sourceUserOp.GetUserOpHash(entryPointAddr, sourceChainID), destUserOp.GetUserOpHash(entryPointAddr, destChainID)}
+	hashes := []common.Hash{
+		sourceUserOp.GetUserOpHash(entryPointAddr, sourceChainID),
+		destUserOp.GetUserOpHash(entryPointAddr, destChainID),
+	}
 	return account, userOps, hashes
 }
 
